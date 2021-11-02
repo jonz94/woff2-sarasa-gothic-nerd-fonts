@@ -1,0 +1,112 @@
+name: Generate woff2 fonts from ttf fonts
+
+on:
+  # runs every 6 hour
+  schedule:
+    - cron: '0 */6 * * *'
+  # allow manually trigger
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      need-build: ${{ steps.check.outputs.need-build }}
+      latest-version: ${{ steps.check.outputs.latest-version }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: main
+      - name: check
+        id: check
+        run: |
+          # Get the latest version
+          LATEST_VERSION=$(curl -fsSL https://api.github.com/repos/jonz94/Sarasa-Gothic-Nerd-Fonts/releases/latest | jq -r .tag_name | cut -d v -f 2)
+          echo Latest version of jonz94/Sarasa-Gothic-Nerd-Fonts is ${LATEST_VERSION}
+          # Get the current version
+          CURRENT_VERSION=$(cat ${GITHUB_WORKSPACE}/ci/VERSION)
+          echo Current version is ${CURRENT_VERSION}
+          if [[ "$LATEST_VERSION" == "$CURRENT_VERSION" ]]; then
+            echo Two versions are the same
+            echo "::set-output name=need-build::false"
+          else
+            echo Two versions are different
+            echo "::set-output name=need-build::true"
+            echo "::set-output name=latest-version::${LATEST_VERSION}"
+          fi
+
+  build:
+    runs-on: ubuntu-latest
+    needs: check
+    if: ${{ needs.check.outputs.need-build == 'true' }}
+    strategy:
+      matrix:
+        styles: ['fixed', 'fixed-slab', 'mono', 'mono-slab', 'term', 'term-slab', 'gothic', 'ui']
+        orthographies: ['cl', 'hc', 'j', 'k', 'sc', 'tc']
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: main
+
+      - name: Download sarasa ${{ matrix.styles }} ${{ matrix.orthographies }} fonts
+        run: |
+          LATEST_VERSION=${{ needs.check.outputs.latest-version }}
+          echo Downloading Sarasa Gothic Nerd Fonts ${LATEST_VERSION}
+          curl -L https://github.com/jonz94/Sarasa-Gothic-Nerd-Fonts/releases/download/v${LATEST_VERSION}/sarasa-${{ matrix.styles }}-${{ matrix.orthographies }}-nerd-font.zip --create-dirs -o ${GITHUB_WORKSPACE}/ci/inputs/sarasa.zip
+          unzip ${GITHUB_WORKSPACE}/ci/inputs/sarasa.zip -d ${GITHUB_WORKSPACE}/ci/inputs
+          rm ${GITHUB_WORKSPACE}/ci/inputs/sarasa.zip
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - name: Generate woff2 fonts for sarasa ${{ matrix.styles }} ${{ matrix.orthographies }}
+        run: |
+          # generate woff2 fonts using fonttools
+          pip install fonttools brotli
+          python ${GITHUB_WORKSPACE}/ci/scripts/main.py
+
+      - name: Commit to assets branchs (both v${{ needs.check.outputs.latest-version }} and latest)
+        run: |
+          cd ${GITHUB_WORKSPACE}/ci/outputs
+          rm .gitkeep
+          ls -alF
+          BRANCH="assets/v${{ needs.check.outputs.latest-version }}/${{ matrix.styles }}-${{ matrix.orthographies }}"
+          git init -b $BRANCH
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add -A
+          git commit -m "🤖 ci: add sarasa ${{ matrix.styles }} ${{ matrix.orthographies }} v${{ needs.check.outputs.latest-version }}"
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git push origin $BRANCH
+          LATEST_BRANCH="assets/latest/${{ matrix.styles }}-${{ matrix.orthographies }}"
+          git checkout -b $LATEST_BRANCH
+          git push -f origin $LATEST_BRANCH
+
+      - name: Zip patched font files
+        run: zip -r sarasa-${{ matrix.styles }}-${{ matrix.orthographies }}-nerd-font-woff2.zip ${GITHUB_WORKSPACE}/ci/outputs/*.woff2
+      - name: Upload zip
+        uses: actions/upload-artifact@master
+        with:
+          name: sarasa-${{ matrix.styles }}-${{ matrix.orthographies }}-nerd-font-woff2.zip
+          path: sarasa-${{ matrix.styles }}-${{ matrix.orthographies }}-nerd-font-woff2.zip
+
+  commit-and-tag:
+    name: commit and tag
+    runs-on: ubuntu-latest
+    needs: [check, build]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: main
+          token: ${{ secrets.WORKFLOW_PERSONAL_ACCESS_TOKEN }}
+      - name: commit
+        run: |
+          LATEST_VERSION=$(echo ${{ needs.check.outputs.latest-version }})
+          echo $LATEST_VERSION > ${GITHUB_WORKSPACE}/ci/VERSION
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add -A
+          git commit -m "🤖 ci: update fonts to v${LATEST_VERSION}"
+          git push origin main
+          git tag -a v${LATEST_VERSION} -m "🎉 build: release version v${LATEST_VERSION}"
+          git push origin --tags

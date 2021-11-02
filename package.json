@@ -1,0 +1,21 @@
+{
+  "name": "woff2-sarasa-gothic-nerd-fonts",
+  "version": "0.0.0",
+  "private": "true",
+  "homepage": "https://github.com/jonz94/woff2-sarasa-gothic-nerd-fonts#readme",
+  "bugs": {
+    "url": "https://github.com/jonz94/woff2-sarasa-gothic-nerd-fonts/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jonz94/woff2-sarasa-gothic-nerd-fonts.git"
+  },
+  "license": "Unlicense",
+  "author": "jonz94 <jody16888@gmail.com>",
+  "devDependencies": {
+    "prettier": "^2.4.1",
+    "prettier-plugin-organize-imports": "^2.3.4",
+    "prettier-plugin-packagejson": "^2.2.13",
+    "typescript": "^4.4.4"
+  }
+}
