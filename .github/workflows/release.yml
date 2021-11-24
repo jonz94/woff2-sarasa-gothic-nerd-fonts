@@ -1,4 +1,4 @@
-name: Release
+name: release
 
 on:
   push:
@@ -14,13 +14,13 @@ jobs:
       latest-version: ${{ steps.check.outputs.latest-version }}
     steps:
       - run: ls -l
-      - name: Download artifact
+      - name: download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
           workflow: generate.yml
           workflow_conclusion: success
       - run: ls -l
-      - name: Release
+      - name: release
         uses: ncipollo/release-action@v1
         with:
           artifacts: '*.zip/*.zip'
