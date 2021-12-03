@@ -13,7 +13,7 @@
   "license": "Unlicense",
   "author": "jonz94 <jody16888@gmail.com>",
   "devDependencies": {
-    "prettier": "^2.4.1",
+    "prettier": "^2.5.0",
     "prettier-plugin-packagejson": "^2.2.15"
   }
 }
