@@ -82,7 +82,7 @@ jobs:
           git add -A
           git commit -m "🤖 ci: add sarasa ${{ matrix.styles }} ${{ matrix.orthographies }} v${LATEST_VERSION}"
           git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-          git push origin $BRANCH
+          git push -f origin $BRANCH
           LATEST_BRANCH="assets/latest/${{ matrix.styles }}-${{ matrix.orthographies }}"
           git checkout -b $LATEST_BRANCH
           git push -f origin $LATEST_BRANCH
@@ -112,6 +112,6 @@ jobs:
           git config user.email github-actions@github.com
           git add -A
           git commit -m "🤖 ci: update fonts to v${LATEST_VERSION}"
-          git push origin main
+          git push -f origin main
           git tag -a v${LATEST_VERSION} -m "🎉 build: release version v${LATEST_VERSION}"
           git push origin --tags
