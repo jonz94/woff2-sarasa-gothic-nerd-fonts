@@ -69,7 +69,7 @@ jobs:
           pip install fonttools brotli
           python ${GITHUB_WORKSPACE}/ci/scripts/main.py
 
-      - name: commit to assets branchs (both v${{ needs.check.outputs.latest-version }} and latest)
+      - name: commit to assets branches (both v${{ needs.check.outputs.latest-version }} and latest)
         run: |
           cd ${GITHUB_WORKSPACE}/ci/outputs
           rm .gitkeep
