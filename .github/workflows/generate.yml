@@ -69,24 +69,6 @@ jobs:
           pip install fonttools brotli
           python ${GITHUB_WORKSPACE}/ci/scripts/main.py
 
-      - name: commit to assets branches (both v${{ needs.check.outputs.latest-version }} and latest)
-        run: |
-          cd ${GITHUB_WORKSPACE}/ci/outputs
-          rm .gitkeep
-          ls -alF
-          LATEST_VERSION="${{ needs.check.outputs.latest-version }}"
-          BRANCH="assets/v${LATEST_VERSION}/${{ matrix.styles }}-${{ matrix.orthographies }}"
-          git init -b $BRANCH
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add -A
-          git commit -m "🤖 ci: add sarasa ${{ matrix.styles }} ${{ matrix.orthographies }} v${LATEST_VERSION}"
-          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-          git push -f origin $BRANCH
-          LATEST_BRANCH="assets/latest/${{ matrix.styles }}-${{ matrix.orthographies }}"
-          git checkout -b $LATEST_BRANCH
-          git push -f origin $LATEST_BRANCH
-
       - name: zip patched font files
         run: zip -r sarasa-${{ matrix.styles }}-${{ matrix.orthographies }}-nerd-font-woff2.zip ${GITHUB_WORKSPACE}/ci/outputs/*.woff2
       - name: upload zip
