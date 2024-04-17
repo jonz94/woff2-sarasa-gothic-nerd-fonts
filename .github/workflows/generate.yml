@@ -46,7 +46,8 @@ jobs:
     strategy:
       matrix:
         styles: ['fixed', 'fixed-slab', 'mono', 'mono-slab', 'term', 'term-slab', 'gothic', 'ui']
-        orthographies: ['cl', 'hc', 'j', 'k', 'sc', 'tc']
+        #orthographies: ['cl', 'hc', 'j', 'k', 'sc', 'tc']
+        orthographies: ['cl', 'hc', 'k', 'sc', 'tc']
     steps:
       - uses: actions/checkout@v3
         with:
