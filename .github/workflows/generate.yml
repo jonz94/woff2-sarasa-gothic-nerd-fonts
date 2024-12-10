@@ -10,39 +10,64 @@ on:
 concurrency: generate
 
 jobs:
-  check:
+  get-latest-tag:
+    name: Get latest tag
     runs-on: ubuntu-latest
     outputs:
-      need-build: ${{ steps.check.outputs.need-build }}
-      latest-version: ${{ steps.check.outputs.latest-version }}
+      tag: ${{ env.TAG }}
     steps:
-      - uses: actions/checkout@v3
+      - name: Get latest release
+        uses: octokit/request-action@v2.x
+        id: get_latest_release
         with:
-          ref: main
+          route: GET /repos/jonz94/Sarasa-Gothic-Nerd-Fonts/releases/latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get the latest tag without v prefix
+        run: |
+          TAG_WITH_V_PREFIX=${{ fromJson(steps.get_latest_release.outputs.data).tag_name }}
+          echo "TAG=${TAG_WITH_V_PREFIX#v}" >> $GITHUB_ENV
+      - name: Summary
+        run: |
+          echo "Latest tag without v prefix is $TAG"
+
+  check:
+    name: Check
+    needs: get-latest-tag
+    runs-on: ubuntu-latest
+    outputs:
+      should-update: ${{ env.SHOULD_UPDATE }}
+      latest-version: ${{ env.LATEST_VERSION }}
+      current-version: ${{ env.CURRENT_VERSION }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: check
-        id: check
         run: |
           # get the latest version
-          LATEST_VERSION=$(curl -fsSL https://api.github.com/repos/jonz94/Sarasa-Gothic-Nerd-Fonts/releases/latest | jq -r .tag_name | cut -d v -f 2)
+          LATEST_VERSION="${{ needs.get-latest-tag.outputs.tag }}"
           echo latest version of jonz94/Sarasa-Gothic-Nerd-Fonts is ${LATEST_VERSION}
 
           # get the current version
           CURRENT_VERSION=$(cat ${GITHUB_WORKSPACE}/ci/VERSION)
           echo current version is ${CURRENT_VERSION}
 
+          echo "LATEST_VERSION=${LATEST_VERSION}" >> $GITHUB_ENV
+          echo "CURRENT_VERSION=${CURRENT_VERSION}" >> $GITHUB_ENV
+
           if [[ "$LATEST_VERSION" == "$CURRENT_VERSION" ]]; then
             echo everything is up to date!
-            echo "::set-output name=need-build::false"
+            echo "SHOULD_UPDATE=false" >> $GITHUB_ENV
           else
             echo a newer version is available
-            echo "::set-output name=need-build::true"
-            echo "::set-output name=latest-version::${LATEST_VERSION}"
+            echo "SHOULD_UPDATE=true" >> $GITHUB_ENV
           fi
 
   build:
-    runs-on: ubuntu-latest
     needs: check
-    if: ${{ needs.check.outputs.need-build == 'true' }}
+    if: ${{ needs.check.outputs.should-update == 'true' }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         styles: ['fixed', 'fixed-slab', 'mono', 'mono-slab', 'term', 'term-slab', 'gothic', 'ui']
