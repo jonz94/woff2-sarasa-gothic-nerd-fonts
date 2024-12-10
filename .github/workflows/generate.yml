@@ -73,7 +73,7 @@ jobs:
         styles: ['fixed', 'fixed-slab', 'mono', 'mono-slab', 'term', 'term-slab', 'gothic', 'ui']
         orthographies: ['cl', 'hc', 'j', 'k', 'sc', 'tc']
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: main
 
@@ -85,7 +85,7 @@ jobs:
           unzip ${GITHUB_WORKSPACE}/ci/inputs/sarasa.zip -d ${GITHUB_WORKSPACE}/ci/inputs
           rm ${GITHUB_WORKSPACE}/ci/inputs/sarasa.zip
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
       - name: generate woff2 fonts for sarasa ${{ matrix.styles }} ${{ matrix.orthographies }}
@@ -97,7 +97,7 @@ jobs:
       - name: zip patched font files
         run: zip -r sarasa-${{ matrix.styles }}-${{ matrix.orthographies }}-nerd-font-woff2.zip ${GITHUB_WORKSPACE}/ci/outputs/*.woff2
       - name: upload zip
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sarasa-${{ matrix.styles }}-${{ matrix.orthographies }}-nerd-font-woff2.zip
           path: sarasa-${{ matrix.styles }}-${{ matrix.orthographies }}-nerd-font-woff2.zip
@@ -107,7 +107,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [check, build]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: main
           token: ${{ secrets.WORKFLOW_PERSONAL_ACCESS_TOKEN }}
